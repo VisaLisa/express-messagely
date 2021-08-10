@@ -2,7 +2,6 @@
 const db = require("../db");
 const bcrypt = require("bcrypt");
 const ExpressError = require("../expressError");
-
 const { BCRYPT_WORK_FACTOR } = require("../config");
 
 /** User of the site. */
@@ -38,7 +37,7 @@ class User {
       [username]
     );
     let user = result.rows[0];
-    return user && (await bcrypt.compare(password, user.password));
+    return await bcrypt.compare(password, user.password);
   }
 
   /** Update last_login_at for user */
@@ -53,7 +52,7 @@ class User {
     );
 
     if (!result.rows[0]) {
-      throw new ExpressError(`No such user: ${username}`, 404);
+      throw new ExpressError(`No user of ${username}`, 404);
     }
   }
 
@@ -73,7 +72,7 @@ class User {
     return result.rows;
   }
 
-  ** Get: get user by username
+  /** Get: get user by username
    *
    * returns {username,
    *          first_name,
@@ -84,7 +83,7 @@ class User {
 
   static async get(username) {
     const result = await db.query(
-        `SELECT username,
+      `SELECT username,
                 first_name,
                 last_name,
                 phone,
@@ -92,10 +91,11 @@ class User {
                 last_login_at
             FROM users
             WHERE username = $1`,
-        [username]);
+      [username]
+    );
 
     if (!result.rows[0]) {
-      throw new ExpressError(`No such user: ${username}`, 404);
+      throw new ExpressError(`No user of ${username}`, 404);
     }
 
     return result.rows[0];
@@ -111,7 +111,7 @@ class User {
 
   static async messagesFrom(username) {
     const result = await db.query(
-        `SELECT m.id,
+      `SELECT m.id,
                 m.to_username,
                 u.first_name,
                 u.last_name,
@@ -122,19 +122,20 @@ class User {
           FROM messages AS m
             JOIN users AS u ON m.to_username = u.username
           WHERE from_username = $1`,
-        [username]);
+      [username]
+    );
 
-    return result.rows.map(m => ({
+    return result.rows.map((m) => ({
       id: m.id,
       to_user: {
         username: m.to_username,
         first_name: m.first_name,
         last_name: m.last_name,
-        phone: m.phone
+        phone: m.phone,
       },
       body: m.body,
       sent_at: m.sent_at,
-      read_at: m.read_at
+      read_at: m.read_at,
     }));
   }
 
@@ -148,7 +149,7 @@ class User {
 
   static async messagesTo(username) {
     const result = await db.query(
-        `SELECT m.id,
+      `SELECT m.id,
                 m.from_username,
                 u.first_name,
                 u.last_name,
@@ -159,9 +160,10 @@ class User {
           FROM messages AS m
            JOIN users AS u ON m.from_username = u.username
           WHERE to_username = $1`,
-        [username]);
+      [username]
+    );
 
-    return result.rows.map(m => ({
+    return result.rows.map((m) => ({
       id: m.id,
       from_user: {
         username: m.from_username,
@@ -171,10 +173,9 @@ class User {
       },
       body: m.body,
       sent_at: m.sent_at,
-      read_at: m.read_at
+      read_at: m.read_at,
     }));
   }
 }
-
 
 module.exports = User;
